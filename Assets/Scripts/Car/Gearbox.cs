@@ -10,6 +10,8 @@ namespace Car
         private int _currentGear;
         private bool _shifting;
 
+        public int CurrentGear { get { return _currentGear; } }
+
 
         [Header("Outputs")]
         public bool inGear;

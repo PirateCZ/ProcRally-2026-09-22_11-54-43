@@ -48,6 +48,11 @@ namespace Car
         public float rearTrackLength;
         public float turningRadius;
 
+        [Header("Understeer Assistant")]
+        [Min(0.0f)] public float steeringAssistStartSlipAngle = 8.0f;
+        [Min(0.0f)] public float steeringAssistFullSlipAngle = 16.0f;
+        [Range(0.0f, 1.0f)] public float steeringAssistMinimumInput = 0.55f;
+
         private void OnEnable()
         {
             if (inputActions == null)
@@ -110,11 +115,16 @@ namespace Car
         {
             _deltaTime = Time.fixedDeltaTime;
             _subDeltaTime = _deltaTime / Substeps;
-        
+
             for (var i = 0; i < wheels.Length; i++)
             {
                 wheels[i].UpdatePhysicsPre(_deltaTime);
-                steering[i].UpdatePhysics(steeringInput);
+            }
+
+            var assistedSteeringInput = GetAssistedSteeringInput();
+            for (var i = 0; i < wheels.Length; i++)
+            {
+                steering[i].UpdatePhysics(assistedSteeringInput);
             }
 
             //Drivetrain loop (RWD)
@@ -134,6 +144,26 @@ namespace Car
             {
                 t.UpdatePhysicsPost();
             }
+        }
+
+        private float GetAssistedSteeringInput()
+        {
+            var frontSlipAngle = 0.0f;
+            var frontWheelCount = Mathf.Min(2, wheels.Length);
+            for (var i = 0; i < frontWheelCount; i++)
+            {
+                if (wheels[i].isGrounded)
+                {
+                    frontSlipAngle = Mathf.Max(frontSlipAngle, Mathf.Abs(wheels[i].lateralSlipAngle));
+                }
+            }
+
+            var startSlipAngle = Mathf.Max(steeringAssistStartSlipAngle, 0.0f);
+            var fullAssistSlipAngle = Mathf.Max(steeringAssistFullSlipAngle, startSlipAngle + 0.01f);
+            var assist = Mathf.SmoothStep(0.0f, 1.0f, Mathf.InverseLerp(startSlipAngle, fullAssistSlipAngle, frontSlipAngle));
+            var steeringLimit = Mathf.Lerp(1.0f, Mathf.Clamp01(steeringAssistMinimumInput), assist);
+
+            return steeringInput * steeringLimit;
         }
 
         private void LateUpdate()

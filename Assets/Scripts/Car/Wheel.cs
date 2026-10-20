@@ -35,16 +35,16 @@ namespace Car
         private Vector3 _longitudinalDir;
         private Vector3 _lateralDir;
 
+        [Header("Friction - Inputs")]
+        [Range(0.0f, 1.0f)] public float handbrakeLateralGripMultiplier = 0.25f;
+
         [Header("Friction - Outputs")]
         public Vector3 fX;
         public Vector3 fY;
-        private float _slipAngle;
+        public float lateralSlipAngle;
         private float _muX;
         private float _slipSpeed;
         private float _muY;
-
-        
-
         public void UpdatePhysicsPre(float argDeltaTime)
         {
             _deltaTime = argDeltaTime;
@@ -60,6 +60,7 @@ namespace Car
 
                 //Calculate the wheel's velocity and direction vectors
                 GetWheelMotionOnGround();
+                CalculateLateralSlipAngle();
             }
             else //If we don't,
             {
@@ -76,7 +77,7 @@ namespace Car
             if (isGrounded)
             {
                 //Calculate the friction force (Fx, Fy)
-                CalculateLateralFriction();
+                CalculateLateralFriction(argHandbrakeInput);
                 CalculateLongitudinalFriction(argBrakeInput, argHandbrakeInput);
             }
             else
@@ -87,7 +88,7 @@ namespace Car
         }
 
         public void UpdatePhysicsPost()
-        { 
+        {
             if (isGrounded)
             {
                 //Apply the friction force (Fx, Fy)
@@ -127,7 +128,18 @@ namespace Car
             _lateralDir = Vector3.ProjectOnPlane(transform.right, _hit.normal).normalized;
         }
 
-        private void CalculateLateralFriction()
+        private void CalculateLateralFriction(float argHandbrakeInput)
+        {
+            CalculateLateralSlipAngle();
+
+            //Map Wheel Slip To Friction Curve
+            const float slipAnglePeak = 16.0f; //Pre-Pacejka: Hard-Coded Peak Slip Angle, Should Be Equal To The Peak In Pacejka Curve
+            _muX = MapRangeClamped(Mathf.Abs(lateralSlipAngle), 0.0f, slipAnglePeak, 0.0f, 1.0f) * Mathf.Sign(lateralSlipAngle); //Pre-Pacejka
+            var handbrakeGrip = Mathf.Lerp(1.0f, Mathf.Clamp01(handbrakeLateralGripMultiplier), Mathf.Clamp01(argHandbrakeInput));
+            _muX *= handbrakeGrip;
+        }
+
+        private void CalculateLateralSlipAngle()
         {
             //Calculate Wheel Slip (Lateral)
             const float slipAnglePeak = 16.0f; //Pre-Pacejka: Hard-Coded Peak Slip Angle, Should Be Equal To The Peak In Pacejka Curve
@@ -137,10 +149,8 @@ namespace Car
             {
                 highSpeedSlipAngle = Mathf.Atan(-linearVelocityLocal.x / Mathf.Abs(linearVelocityLocal.z)) * Mathf.Rad2Deg;
             }
-            _slipAngle = Mathf.Lerp(lowSpeedSlipAngle, highSpeedSlipAngle, MapRangeClamped(linearVelocityLocal.magnitude, 3.0f, 6.0f, 0.0f, 1.0f)); //Transition Between Low And High Speed Friction Models Based Off Of Wheel Speed
 
-            //Map Wheel Slip To Friction Curve
-            _muX = MapRangeClamped(Mathf.Abs(_slipAngle), 0.0f, slipAnglePeak, 0.0f, 1.0f) * Mathf.Sign(_slipAngle); //Pre-Pacejka
+            lateralSlipAngle = Mathf.Lerp(lowSpeedSlipAngle, highSpeedSlipAngle, MapRangeClamped(linearVelocityLocal.magnitude, 3.0f, 6.0f, 0.0f, 1.0f)); //Transition Between Low And High Speed Friction Models Based Off Of Wheel Speed
         }
 
         private void CalculateLongitudinalFriction(float argBrakeInput, float argHandbrakeInput)
@@ -183,7 +193,7 @@ namespace Car
         {
             _lastLength = currentLength = restLength; //Fully extend suspension
 
-            _slipAngle = _slipSpeed = 0.0f; //Set wheel slip to zero
+            lateralSlipAngle = _slipSpeed = 0.0f; //Set wheel slip to zero
             _muX = _muY = 0.0f; //Set friction coefficients to zero
             fX = fY = fZ = Vector3.zero; //Set forces to zero
         }

@@ -136,7 +136,7 @@ MonoBehaviour:
   zAxis: 0
   entryPoint: {x: 5, y: 0, z: 0}
   entryDirection: {x: 1, y: 0, z: 0}
-  exitPoint: {x: -7.5, y: 0, z: -12.5}
+  exitPoint: {x: -10, y: 0, z: -15}
   exitDirection: {x: 0, y: 0, z: -1}
 --- !u!1 &5430777135472609903
 GameObject:
@@ -166,8 +166,8 @@ Transform:
   m_GameObject: {fileID: 5430777135472609903}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0.7071068, z: 0.7071068, w: 0}
-  m_LocalPosition: {x: -10.2, y: 0, z: -12.14}
-  m_LocalScale: {x: 100.00005, y: 100.00004, z: 100.00004}
+  m_LocalPosition: {x: -10, y: 0, z: -15}
+  m_LocalScale: {x: 100, y: 100.00004, z: 100.00004}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 9193259984775386089}

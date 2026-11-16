@@ -647,6 +647,9 @@ MonoBehaviour:
   wheelbase: 2.75
   rearTrackLength: 1.68
   turningRadius: 4.56
+  steeringAssistStartSlipAngle: 8
+  steeringAssistFullSlipAngle: 16
+  steeringAssistMinimumInput: 0.55
 --- !u!114 &7734911583204400011
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -722,8 +725,10 @@ MonoBehaviour:
   brakeTorque: 1000
   wheelAngularVelocity: 0
   linearVelocityLocal: {x: 0, y: 0, z: 0}
+  handbrakeLateralGripMultiplier: 0.25
   fX: {x: 0, y: 0, z: 0}
   fY: {x: 0, y: 0, z: 0}
+  lateralSlipAngle: 0
 --- !u!114 &8457773819192668753
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -903,8 +908,10 @@ MonoBehaviour:
   brakeTorque: 1000
   wheelAngularVelocity: 0
   linearVelocityLocal: {x: 0, y: 0, z: 0}
+  handbrakeLateralGripMultiplier: 0.25
   fX: {x: 0, y: 0, z: 0}
   fY: {x: 0, y: 0, z: 0}
+  lateralSlipAngle: 0
 --- !u!114 &456371734314632289
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5850,8 +5857,10 @@ MonoBehaviour:
   brakeTorque: 1000
   wheelAngularVelocity: 0
   linearVelocityLocal: {x: 0, y: 0, z: 0}
+  handbrakeLateralGripMultiplier: 0.25
   fX: {x: 0, y: 0, z: 0}
   fY: {x: 0, y: 0, z: 0}
+  lateralSlipAngle: 0
 --- !u!114 &8137015334925239146
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5926,8 +5935,10 @@ MonoBehaviour:
   brakeTorque: 1000
   wheelAngularVelocity: 0
   linearVelocityLocal: {x: 0, y: 0, z: 0}
+  handbrakeLateralGripMultiplier: 0.25
   fX: {x: 0, y: 0, z: 0}
   fY: {x: 0, y: 0, z: 0}
+  lateralSlipAngle: 0
 --- !u!114 &4327333914362873257
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6398,7 +6409,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &8190932085411275584
 Transform:
   m_ObjectHideFlags: 0

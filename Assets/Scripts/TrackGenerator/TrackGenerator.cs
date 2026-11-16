@@ -5,13 +5,12 @@ namespace TrackGenerator.TrackGenerator
 {
     public class TrackGenerator : MonoBehaviour
     {
-        private const int MaxPlacementAttempts = 20000;
-
         [SerializeField] private TrackPiece[] availablePieces;
         [SerializeField] private int pieceCount = 20;
         [SerializeField] private int seed;
         [SerializeField] private Vector3 startDirection = Vector3.forward;
         [SerializeField] private bool generateOnStart = true;
+        [SerializeField] private int maxPlacementAttempts = 20000;
         [SerializeField, HideInInspector] private Transform generatedRoot;
 
         private void Start()
@@ -34,6 +33,12 @@ namespace TrackGenerator.TrackGenerator
             if (pieceCount < 1)
             {
                 Debug.LogError("Track Generator piece count must be at least one.", this);
+                return;
+            }
+
+            if (maxPlacementAttempts < 1)
+            {
+                Debug.LogError("Track Generator placement attempts must be at least one.", this);
                 return;
             }
 
@@ -91,7 +96,7 @@ namespace TrackGenerator.TrackGenerator
             Shuffle(candidatePrefabs, random);
             foreach (var prefab in candidatePrefabs)
             {
-                if (attempts >= MaxPlacementAttempts)
+                if (attempts >= maxPlacementAttempts)
                 {
                     return false;
                 }
@@ -136,10 +141,10 @@ namespace TrackGenerator.TrackGenerator
 
         private static bool IntersectsTrack(TrackPiece candidate, List<TrackPiece> placedPieces)
         {
-            var candidateColliders = candidate.GetComponentsInChildren<Collider>();
+            var candidateColliders = candidate.GetComponentsInChildren<Collider>(true);
             for (var pieceIndex = 0; pieceIndex < placedPieces.Count - 1; pieceIndex++)
             {
-                var existingColliders = placedPieces[pieceIndex].GetComponentsInChildren<Collider>();
+                var existingColliders = placedPieces[pieceIndex].GetComponentsInChildren<Collider>(true);
                 foreach (var candidateCollider in candidateColliders)
                 {
                     if (!candidateCollider.enabled || !candidateCollider.gameObject.activeInHierarchy)
@@ -150,6 +155,11 @@ namespace TrackGenerator.TrackGenerator
                     foreach (var existingCollider in existingColliders)
                     {
                         if (!existingCollider.enabled || !existingCollider.gameObject.activeInHierarchy)
+                        {
+                            continue;
+                        }
+
+                        if (!candidateCollider.bounds.Intersects(existingCollider.bounds))
                         {
                             continue;
                         }
@@ -203,10 +213,12 @@ namespace TrackGenerator.TrackGenerator
                     continue;
                 }
 
-                if (piece.GetComponentsInChildren<Collider>().Length == 0)
+                if (piece.GetComponentsInChildren<Collider>(true).Length == 0 &&
+                    !HasMeshGeometry(piece))
                 {
                     Debug.LogError(
-                        $"Track piece '{piece.name}' needs colliders so track intersections can be detected.", piece);
+                        $"Track piece '{piece.name}' needs colliders or mesh geometry so track intersections can be detected.",
+                        piece);
                     continue;
                 }
 
@@ -214,6 +226,20 @@ namespace TrackGenerator.TrackGenerator
             }
 
             return result;
+        }
+
+        private static bool HasMeshGeometry(TrackPiece piece)
+        {
+            var meshFilters = piece.GetComponentsInChildren<MeshFilter>();
+            foreach (var meshFilter in meshFilters)
+            {
+                if (meshFilter.sharedMesh != null)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private TrackPiece PlacePiece(
@@ -233,10 +259,67 @@ namespace TrackGenerator.TrackGenerator
                 : Quaternion.FromToRotation(entryDirection, targetEntryDirection);
             var position = targetEntryPosition - rotation * prefab.EntryPoint;
             var instance = Instantiate(prefab, position, rotation, generatedRoot);
+            PrepareIntersectionColliders(instance);
 
             exitPosition = instance.transform.TransformPoint(instance.ExitPoint);
             exitDirection = instance.transform.TransformDirection(instance.ExitDirection).normalized;
             return instance;
+        }
+
+        private static void PrepareIntersectionColliders(TrackPiece piece)
+        {
+            if (HasUsableIntersectionCollider(piece))
+            {
+                return;
+            }
+
+            var meshFilters = piece.GetComponentsInChildren<MeshFilter>();
+            foreach (var meshFilter in meshFilters)
+            {
+                if (meshFilter.sharedMesh == null)
+                {
+                    continue;
+                }
+
+                var meshCollider = meshFilter.GetComponent<MeshCollider>();
+                if (meshCollider == null)
+                {
+                    meshCollider = meshFilter.gameObject.AddComponent<MeshCollider>();
+                    meshCollider.sharedMesh = meshFilter.sharedMesh;
+                }
+
+                else if (meshCollider.sharedMesh == null)
+                {
+                    meshCollider.sharedMesh = meshFilter.sharedMesh;
+                }
+
+                meshCollider.convex = true;
+            }
+
+            var meshColliders = piece.GetComponentsInChildren<MeshCollider>();
+            foreach (var meshCollider in meshColliders)
+            {
+                meshCollider.convex = true;
+            }
+        }
+
+        private static bool HasUsableIntersectionCollider(TrackPiece piece)
+        {
+            var colliders = piece.GetComponentsInChildren<Collider>(true);
+            foreach (var collider in colliders)
+            {
+                if (collider is BoxCollider || collider is SphereCollider || collider is CapsuleCollider)
+                {
+                    return true;
+                }
+
+                if (collider is MeshCollider meshCollider && meshCollider.convex)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private void EnsureGeneratedRoot()

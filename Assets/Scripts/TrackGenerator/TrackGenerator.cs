@@ -12,6 +12,10 @@ namespace TrackGenerator.TrackGenerator
         [SerializeField] private bool generateOnStart = true;
         [SerializeField] private int maxPlacementAttempts = 20000;
         [SerializeField, HideInInspector] private Transform generatedRoot;
+        private readonly List<TrackPiece> generatedPieces = new List<TrackPiece>();
+
+        public IReadOnlyList<TrackPiece> GeneratedPieces => generatedPieces;
+        public event System.Action<IReadOnlyList<TrackPiece>> TrackGenerated;
 
         private void Start()
         {
@@ -77,6 +81,12 @@ namespace TrackGenerator.TrackGenerator
                     "Check that the road colliders and connection points allow a clear route.",
                     this);
             }
+            else
+            {
+                generatedPieces.AddRange(placedPieces);
+            }
+
+            TrackGenerated?.Invoke(generatedPieces);
         }
 
         private bool TryGenerateTrack(
@@ -336,6 +346,8 @@ namespace TrackGenerator.TrackGenerator
 
         private void ClearGeneratedTrack()
         {
+            generatedPieces.Clear();
+
             if (generatedRoot == null)
             {
                 return;
